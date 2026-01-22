@@ -38,6 +38,11 @@ def get_market_data(start_date, end_date):
     try:
         btc_data = yf.download('BTC-USD', start=start_date, end=end_date, progress=False)
         btc_data.index = btc_data.index.tz_localize(None)
+
+        # 修复 yfinance 新版本 MultiIndex 列名问题
+        if isinstance(btc_data.columns, pd.MultiIndex):
+            btc_data.columns = btc_data.columns.get_level_values(0)
+
         btc_df = btc_data[['Close']].copy()
     except Exception as e:
         st.error(f"比特币数据获取失败: {e}")
