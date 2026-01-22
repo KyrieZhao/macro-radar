@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import pandas_datareader.data as web
 import yfinance as yf # 👈 云端神器，免代理
@@ -167,6 +168,44 @@ with st.spinner('正在连接全球服务器...'):
         c2.metric("Net Liquidity", f"${latest['Net_Liquidity']:,.2f} B")
         c3.metric("Correlation", f"{latest['Correlation']:.2f}")
         c4.info(f"Signal: {latest['Signal']}")
+
+        # ==========================================
+        # 📈 TradingView 实时图表
+        # ==========================================
+        st.subheader("📈 BTC Real-Time Chart (TradingView)")
+
+        tradingview_widget = """
+        <!-- TradingView Widget BEGIN -->
+        <div class="tradingview-widget-container" style="height:500px;width:100%">
+          <div id="tradingview_btc" style="height:100%;width:100%"></div>
+          <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+          <script type="text/javascript">
+          new TradingView.widget(
+          {
+            "autosize": true,
+            "symbol": "BINANCE:BTCUSDT",
+            "interval": "60",
+            "timezone": "Asia/Shanghai",
+            "theme": "dark",
+            "style": "1",
+            "locale": "zh_CN",
+            "toolbar_bg": "#f1f3f6",
+            "enable_publishing": false,
+            "allow_symbol_change": true,
+            "container_id": "tradingview_btc",
+            "hide_side_toolbar": false
+          }
+          );
+          </script>
+        </div>
+        <!-- TradingView Widget END -->
+        """
+        components.html(tradingview_widget, height=500)
+
+        # ==========================================
+        # 📊 流动性对比图表
+        # ==========================================
+        st.subheader("📊 Liquidity vs BTC Correlation")
 
         # 图表
         fig = make_subplots(specs=[[{"secondary_y": True}]])
