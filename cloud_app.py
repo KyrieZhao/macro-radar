@@ -20,6 +20,23 @@ st.set_page_config(
 # ==========================================
 # 📥 数据获取
 # ==========================================
+
+def get_realtime_btc_price():
+    """获取实时 BTC 价格（不缓存）"""
+    try:
+        ticker = yf.Ticker('BTC-USD')
+        data = ticker.history(period='2d')
+        if len(data) >= 2:
+            current_price = data['Close'].iloc[-1]
+            prev_price = data['Close'].iloc[-2]
+            change_24h = ((current_price - prev_price) / prev_price) * 100
+            return current_price, change_24h
+        elif len(data) == 1:
+            return data['Close'].iloc[-1], 0.0
+        return None, None
+    except Exception:
+        return None, None
+
 @st.cache_data(ttl=3600)
 def get_market_data(start_date, end_date):
     # 1. 美联储数据 (FRED)
@@ -124,9 +141,22 @@ with st.spinner('正在连接全球服务器...'):
         df = calculate_signal(raw_df)
         latest = df.iloc[-1]
 
+        # 获取实时 BTC 价格
+        realtime_price, change_24h = get_realtime_btc_price()
+
         # 指标卡
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("BTC Price", f"${latest['BTC_Price']:,.0f}")
+
+        # 实时 BTC 价格显示
+        if realtime_price is not None:
+            c1.metric(
+                "BTC Price (Live)",
+                f"${realtime_price:,.0f}",
+                delta=f"{change_24h:+.2f}%" if change_24h is not None else None
+            )
+        else:
+            c1.metric("BTC Price", f"${latest['BTC_Price']:,.0f}")
+
         c2.metric("Net Liquidity", f"${latest['Net_Liquidity']:,.2f} B")
         c3.metric("Correlation", f"{latest['Correlation']:.2f}")
         c4.info(f"Signal: {latest['Signal']}")
