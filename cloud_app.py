@@ -21,11 +21,9 @@ st.set_page_config(
 # 📥 数据获取
 # ==========================================
 @st.cache_data(ttl=3600)
-def get_market_data():
+def get_market_data(start_date, end_date):
     # 1. 美联储数据 (FRED)
     # 云端服务器可以直接连接 FRED
-    start_date = (datetime.datetime.now() - datetime.timedelta(days=1095)).strftime('%Y-%m-%d')
-    end_date = datetime.datetime.now().strftime('%Y-%m-%d')
     
     try:
         fred_data = web.DataReader(['WALCL', 'WTREGEN', 'RRPONTSYD'], 'fred', start_date, end_date)
@@ -78,12 +76,49 @@ def calculate_signal(df):
 st.title("📡 Macro Radar (Cloud Edition)")
 st.markdown("全球流动性雷达 | 实时云端部署版")
 
+# ==========================================
+# 🎛️ 侧边栏配置
+# ==========================================
+with st.sidebar:
+    st.header("⚙️ Settings")
+
+    # 日期范围选择器
+    default_start = datetime.datetime.now() - datetime.timedelta(days=1095)
+    default_end = datetime.datetime.now()
+
+    start_date = st.date_input(
+        "Start Date",
+        value=default_start,
+        max_value=default_end
+    )
+
+    end_date = st.date_input(
+        "End Date",
+        value=default_end,
+        min_value=start_date,
+        max_value=datetime.datetime.now()
+    )
+
+    # 刷新按钮
+    if st.button("🔄 Refresh Data"):
+        st.cache_data.clear()
+        st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 📊 Data Export")
+
+# ==========================================
+# 📊 数据加载和处理
+# ==========================================
 with st.spinner('正在连接全球服务器...'):
-    raw_df = get_market_data()
+    start_str = start_date.strftime('%Y-%m-%d')
+    end_str = end_date.strftime('%Y-%m-%d')
+
+    raw_df = get_market_data(start_str, end_str)
     if raw_df is not None:
         df = calculate_signal(raw_df)
         latest = df.iloc[-1]
-        
+
         # 指标卡
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("BTC Price", f"${latest['BTC_Price']:,.0f}")
@@ -97,3 +132,34 @@ with st.spinner('正在连接全球服务器...'):
         fig.add_trace(go.Scatter(x=df.index, y=df['BTC_Price'], name="BTC", line=dict(color='#F7931A')), secondary_y=True)
         fig.update_layout(template="plotly_dark", height=600, hovermode="x unified")
         st.plotly_chart(fig, use_container_width=True)
+
+        # ==========================================
+        # 📋 历史信号表
+        # ==========================================
+        st.subheader("📋 Recent Signal History")
+
+        # 显示最近30天的信号
+        recent_signals = df[['BTC_Price', 'Net_Liquidity', 'Correlation', 'Signal']].tail(30).copy()
+        recent_signals.index = recent_signals.index.strftime('%Y-%m-%d')
+        recent_signals['BTC_Price'] = recent_signals['BTC_Price'].apply(lambda x: f"${x:,.0f}")
+        recent_signals['Net_Liquidity'] = recent_signals['Net_Liquidity'].apply(lambda x: f"${x:,.2f}B")
+        recent_signals['Correlation'] = recent_signals['Correlation'].apply(lambda x: f"{x:.2f}")
+
+        st.dataframe(
+            recent_signals.iloc[::-1],  # 倒序显示，最新的在上面
+            use_container_width=True,
+            height=400
+        )
+
+        # ==========================================
+        # 💾 数据导出
+        # ==========================================
+        with st.sidebar:
+            # CSV导出
+            csv = df.to_csv().encode('utf-8')
+            st.download_button(
+                label="📥 Download Full Data (CSV)",
+                data=csv,
+                file_name=f"macro_radar_{start_str}_to_{end_str}.csv",
+                mime="text/csv",
+            )
