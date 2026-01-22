@@ -24,15 +24,22 @@ st.set_page_config(
 def get_realtime_btc_price():
     """获取实时 BTC 价格（不缓存）"""
     try:
-        ticker = yf.Ticker('BTC-USD')
-        data = ticker.history(period='2d')
+        # 使用 yf.download 获取最近 5 天数据，更可靠
+        end = datetime.datetime.now()
+        start = end - datetime.timedelta(days=5)
+        data = yf.download('BTC-USD', start=start, end=end, progress=False)
+
+        # 处理 MultiIndex 列名
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns = data.columns.get_level_values(0)
+
         if len(data) >= 2:
-            current_price = data['Close'].iloc[-1]
-            prev_price = data['Close'].iloc[-2]
+            current_price = float(data['Close'].iloc[-1])
+            prev_price = float(data['Close'].iloc[-2])
             change_24h = ((current_price - prev_price) / prev_price) * 100
             return current_price, change_24h
         elif len(data) == 1:
-            return data['Close'].iloc[-1], 0.0
+            return float(data['Close'].iloc[-1]), 0.0
         return None, None
     except Exception:
         return None, None
