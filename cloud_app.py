@@ -1,5 +1,4 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import pandas_datareader.data as web
 import yfinance as yf # 👈 云端神器，免代理
@@ -170,48 +169,41 @@ with st.spinner('正在连接全球服务器...'):
         c4.info(f"Signal: {latest['Signal']}")
 
         # ==========================================
-        # 📈 TradingView 实时图表
-        # ==========================================
-        st.subheader("📈 BTC Real-Time Chart (TradingView)")
-
-        tradingview_widget = """
-        <!-- TradingView Widget BEGIN -->
-        <div class="tradingview-widget-container" style="height:500px;width:100%">
-          <div id="tradingview_btc" style="height:100%;width:100%"></div>
-          <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-          <script type="text/javascript">
-          new TradingView.widget(
-          {
-            "autosize": true,
-            "symbol": "BINANCE:BTCUSDT",
-            "interval": "60",
-            "timezone": "Asia/Shanghai",
-            "theme": "dark",
-            "style": "1",
-            "locale": "zh_CN",
-            "toolbar_bg": "#f1f3f6",
-            "enable_publishing": false,
-            "allow_symbol_change": true,
-            "container_id": "tradingview_btc",
-            "hide_side_toolbar": false
-          }
-          );
-          </script>
-        </div>
-        <!-- TradingView Widget END -->
-        """
-        components.html(tradingview_widget, height=500)
-
-        # ==========================================
-        # 📊 流动性对比图表
+        # 📊 流动性对比图表 (自适应屏幕)
         # ==========================================
         st.subheader("📊 Liquidity vs BTC Correlation")
 
-        # 图表
+        # 图表 - 自适应高度，添加范围选择器
         fig = make_subplots(specs=[[{"secondary_y": True}]])
         fig.add_trace(go.Scatter(x=df.index, y=df['Net_Liquidity'], name="Liquidity", fill='tozeroy', line=dict(color='rgba(0, 180, 255, 0.5)')), secondary_y=False)
-        fig.add_trace(go.Scatter(x=df.index, y=df['BTC_Price'], name="BTC", line=dict(color='#F7931A')), secondary_y=True)
-        fig.update_layout(template="plotly_dark", height=600, hovermode="x unified")
+        fig.add_trace(go.Scatter(x=df.index, y=df['BTC_Price'], name="BTC", line=dict(color='#F7931A', width=2)), secondary_y=True)
+
+        fig.update_layout(
+            template="plotly_dark",
+            height=700,
+            hovermode="x unified",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            margin=dict(l=60, r=60, t=40, b=60),
+            xaxis=dict(
+                rangeslider=dict(visible=True, thickness=0.05),
+                rangeselector=dict(
+                    buttons=list([
+                        dict(count=1, label="1M", step="month", stepmode="backward"),
+                        dict(count=3, label="3M", step="month", stepmode="backward"),
+                        dict(count=6, label="6M", step="month", stepmode="backward"),
+                        dict(count=1, label="1Y", step="year", stepmode="backward"),
+                        dict(step="all", label="ALL")
+                    ]),
+                    bgcolor="rgba(50,50,50,0.8)",
+                    activecolor="#F7931A",
+                    font=dict(color="white")
+                )
+            )
+        )
+
+        fig.update_yaxes(title_text="Net Liquidity ($B)", secondary_y=False)
+        fig.update_yaxes(title_text="BTC Price ($)", secondary_y=True)
+
         st.plotly_chart(fig, use_container_width=True)
 
         # ==========================================
