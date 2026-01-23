@@ -52,7 +52,9 @@ def get_market_data(start_date, end_date):
     try:
         fred_data = web.DataReader(['WALCL', 'WTREGEN', 'RRPONTSYD'], 'fred', start_date, end_date)
         fred_data = fred_data.ffill().dropna()
-        fred_data['Net_Liquidity'] = (fred_data['WALCL'] - fred_data['WTREGEN'] - fred_data['RRPONTSYD']) / 1000
+        # 单位换算：WALCL是百万美元，WTREGEN和RRPONTSYD是十亿美元
+        # 先将WALCL转换为十亿美元（/1000），再减去已是十亿美元的TGA和RRP
+        fred_data['Net_Liquidity'] = fred_data['WALCL'] / 1000 - fred_data['WTREGEN'] - fred_data['RRPONTSYD']
     except Exception as e:
         st.error(f"美联储数据获取失败: {e}")
         return None
