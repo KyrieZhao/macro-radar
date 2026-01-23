@@ -111,8 +111,8 @@ st.markdown("全球流动性雷达 | 实时云端部署版")
 with st.sidebar:
     st.header("⚙️ Settings")
 
-    # 日期范围选择器
-    default_start = datetime.datetime.now() - datetime.timedelta(days=1095)
+    # 日期范围选择器 - 默认显示2018年以来的数据
+    default_start = datetime.datetime(2018, 1, 1)
     default_end = datetime.datetime.now()
 
     start_date = st.date_input(
@@ -192,6 +192,9 @@ with st.spinner('正在连接全球服务器...'):
                         dict(count=3, label="3M", step="month", stepmode="backward"),
                         dict(count=6, label="6M", step="month", stepmode="backward"),
                         dict(count=1, label="1Y", step="year", stepmode="backward"),
+                        dict(count=2, label="2Y", step="year", stepmode="backward"),
+                        dict(count=3, label="3Y", step="year", stepmode="backward"),
+                        dict(count=5, label="5Y", step="year", stepmode="backward"),
                         dict(step="all", label="ALL")
                     ]),
                     bgcolor="rgba(50,50,50,0.8)",
